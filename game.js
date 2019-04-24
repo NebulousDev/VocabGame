@@ -390,11 +390,6 @@ class TextBox extends GameObject
         this.box.style.left = "0px";
     }
 
-    update()
-    {
-
-    }
-
     render()
     {
         gfx.drawImage(img_textArea, this.x, this.y, this.width, this.height);
@@ -523,7 +518,7 @@ class CardSwapper extends GameObject
         this.scoreboard = new Scoreboard();
 
         this.passed = 0;
-        this.numWords = 3;
+        this.numWords = 10;
 
         this.showAnswer = false;
 
