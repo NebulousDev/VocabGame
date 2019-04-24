@@ -37,6 +37,7 @@ let buttonGrowMargin = 5;
 
 // Scene
 let activeScene = undefined;
+let failScene = undefined;
 
 // Images
 var img_menu_bg = new Image;
@@ -78,7 +79,7 @@ function fix_dpi() {
 // Function to get the mouse position
 function onMouseMove(canvas, event)
 {
-    var rect = canvas.getBoundingClientRect();
+    let rect = canvas.getBoundingClientRect();
     mousePositionX = event.clientX - rect.left;
     mousePositionY = event.clientY - rect.top;
 }
@@ -328,7 +329,7 @@ class TextBox extends GameObject
 
         // NOTE: Hard coded for now
         this.x = 120;
-        this.y = 550;
+        this.y = 650;
         this.width = 575;
         this.height = 150;
     }
@@ -345,10 +346,13 @@ class TextBox extends GameObject
 
     showBox()
     {
+        let rect = canvas.getBoundingClientRect();
+        let sx = rect.x + 150;
+        let sy = rect.y + 670;
         this.box = document.getElementsByName("text")[0];
         this.box.disabled = false;
-        this.box.style.top = "580px";
-        this.box.style.left = "160px";
+        this.box.style.top = sy + "px";
+        this.box.style.left = sx + "px";
     }
 
     hideBox()
@@ -381,7 +385,7 @@ class Card extends GameObject
         
         // NOTE: Hard coded for now
         this.x = 100;
-        this.y = 100;
+        this.y = 200;
         this.width = 600;
         this.height = 375;
     }
@@ -401,7 +405,58 @@ class Card extends GameObject
     }
 }
 
+class Scoreboard extends GameObject
+{
+    constructor()
+    {
+        super();
+        this.score = 0;
+        this.strikes = "";
+
+        // NOTE: Hard coded for now
+        super.x = 120;
+        super.y = 75;
+        this.width = 350;
+        this.height = 120;
+
+        // I have no idea why these dont just work
+        // as member functions
+
+        this.strike = function()
+        {
+            this.strikes += " X"
+        }
+
+        this.resetScore = function()
+        {
+            this.strikes = ""
+        }
+    }
+
+    render()
+    {
+        gfx.drawImage(img_textArea, this.x, this.y, this.width, this.height);
+        gfx.drawImage(img_button, this.x + 350, 80, 205, 105);
+        
+        gfx.fillStyle = "#4c4506";
+        gfx.textAlign = "left"; 
+        gfx.font = "bold 30px Arial";
+        gfx.fillText("スコアー", this.x + 40, this.y + 70);
+ 
+        gfx.textAlign = "right"; 
+        gfx.fillText(this.score, this.x + 300, this.y + 70);
+    
+        gfx.fillStyle = "#ff0000";
+        gfx.font = "bold 48px Arial";
+        gfx.fillText(this.strikes, this.x + 512, this.y + 75);
+    
+    }
+}
+
+// Very hacky:
+// I dont like these:
 let cardSwapper = undefined;
+let scoreboard = undefined;
 
 // Card game card swapper
 class CardSwapper extends GameObject
@@ -419,8 +474,12 @@ class CardSwapper extends GameObject
         this.redCount = 0;
 
         this.textBox = new TextBox();
+        this.scoreboard = new Scoreboard();
+
+        this.strikeCount = 0;
 
         cardSwapper = this;
+        scoreboard = this.scoreboard;
 
         this.box = document.getElementsByName("text")[0];
         this.box.addEventListener("keydown", function(event){
@@ -447,6 +506,13 @@ class CardSwapper extends GameObject
         else
         {
             this.redCount = 10;
+            this.scoreboard.strike();
+            this.strikeCount++;
+
+            if(this.strikeCount == 3)
+            {
+                switchScene(failedScene);
+            }
         }
     }
 
@@ -483,13 +549,13 @@ class CardSwapper extends GameObject
        {
             this.box.style.color = "black";
        }
-
     }
 
     render()
     {
         this.card.render();
         this.textBox.render();
+        this.scoreboard.render();
     }
 }
 
@@ -545,7 +611,6 @@ function getCards()
     cards.push(new Card("ごぜん", "AM"));
     cards.push(new Card("〜さい", "years old"));
     cards.push(new Card("せんせい", "teacher"));
-    cards.push(new Card("せんもん", "major"));
     cards.push(new Card("そうです", "correct"));
     cards.push(new Card("だいがく", "college"));
     cards.push(new Card("でんわ", "friend"));
@@ -560,6 +625,8 @@ cardsSceen.add(new CardSwapper(getCards()));
 let cardsSceen_pre = new Scene(img_cards_bg);
 cardsSceen_pre.add(new Logo(img_cards_logo, 0, 75, 100, 640, 400));
 cardsSceen_pre.add(new Button("プレー", img_button, "bold 34px Arial", "bold 36px Arial", "#4c4506", 275, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
+
+failScene = new Scene();
 
 let menuScene = new Scene(img_menu_bg);
 menuScene.add(new Logo(img_logo, 4, 75, 100, 640, 400));
