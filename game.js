@@ -38,13 +38,17 @@ let buttonGrowMargin = 5;
 // Scene
 let activeScene = undefined;
 let failScene = undefined;
+let winScene = undefined;
+let cardsSceen = undefined;
+let cardsSceen_pre = undefined;
+let menuScene = undefined;
 
 // Images
 var img_menu_bg = new Image;
 img_menu_bg.src = "menu_bg.png";
 
 var img_logo = new Image;
-img_logo.src = "logo.png";
+img_logo.src = "logo2.png";
 
 var img_button = new Image;
 img_button.src = "button.png";
@@ -53,13 +57,19 @@ var img_cards_bg = new Image;
 img_cards_bg.src = "cards_bg.png";
 
 var img_cards_logo = new Image;
-img_cards_logo.src = "cards_logo.png";
+img_cards_logo.src = "card_logo.png";
 
 var img_card = new Image;
 img_card.src = "card.png";
 
 var img_textArea = new Image;
 img_textArea.src = "text_area.png";
+
+var img_win = new Image;
+img_win.src = "win.png";
+
+var img_lose = new Image;
+img_lose.src = "lose.png";
 
 function fix_dpi() {
     //create a style object that returns width and height
@@ -75,6 +85,23 @@ function fix_dpi() {
       canvas.setAttribute('width', style.width() * dpi);
       canvas.setAttribute('height', style.height() * dpi);
     }
+
+function forceKeyPressUppercase(e)
+{
+    var charInput = e.keyCode;
+    if((charInput >= 97) && (charInput <= 122)) { // lowercase
+    if(!e.ctrlKey && !e.metaKey && !e.altKey) { // no modifier key
+        var newChar = charInput - 32;
+        var start = e.target.selectionStart;
+        var end = e.target.selectionEnd;
+        e.target.value = e.target.value.substring(0, start) + String.fromCharCode(newChar) + e.target.value.substring(end);
+        e.target.setSelectionRange(start+1, start+1);
+        e.preventDefault();
+    }
+    }
+}
+
+document.getElementsByName("text")[0].addEventListener("keypress", forceKeyPressUppercase, false);
 
 // Function to get the mouse position
 function onMouseMove(canvas, event)
@@ -382,19 +409,25 @@ class Card extends GameObject
         super();
         this.english = english;
         this.japanese = japanese;
+        this.show = false;
         
         // NOTE: Hard coded for now
         this.x = 100;
         this.y = 200;
         this.width = 600;
         this.height = 375;
-    }
 
-    update()
-    {
-        // nothing
-    }
+        this.showAnswer = function()
+        {
+            this.show = true;
+        };
 
+        this.isShowing = function()
+        {
+            return this.show;
+        };
+    }
+    
     render()
     {
         gfx.drawImage(img_card, this.x, this.y, this.width, this.height);
@@ -402,6 +435,14 @@ class Card extends GameObject
         gfx.textAlign = "center"; 
         gfx.font = "bold 48px Arial";
         gfx.fillText(this.japanese, this.x + (this.width / 2), this.y + (this.height / 2) + 10);
+
+        if(this.show)
+        {
+            gfx.fillStyle = "#333333";
+            gfx.textAlign = "center"; 
+            gfx.font = "bold 30px Arial";
+            gfx.fillText(this.english, this.x + (this.width / 2), this.y + (this.height / 2) + 50);
+        }
     }
 }
 
@@ -427,6 +468,11 @@ class Scoreboard extends GameObject
             this.strikes += " X"
         }
 
+        this.addScore = function()
+        {
+            this.score++;
+        }
+
         this.resetScore = function()
         {
             this.strikes = ""
@@ -440,7 +486,7 @@ class Scoreboard extends GameObject
         
         gfx.fillStyle = "#4c4506";
         gfx.textAlign = "left"; 
-        gfx.font = "bold 30px Arial";
+        gfx.font = "bold 30px kosugimaru";
         gfx.fillText("スコアー", this.x + 40, this.y + 70);
  
         gfx.textAlign = "right"; 
@@ -461,20 +507,25 @@ let scoreboard = undefined;
 // Card game card swapper
 class CardSwapper extends GameObject
 {
-    constructor(cards)
+    constructor()
     {
         super();
         super.x = 0;
         super.y = 0;
         this.width = 400;
         this.height = 400;
-        this.cards = cards;
+        this.cards = getCards();
         this.size = 0;
         this.card = this.nextCard();
         this.redCount = 0;
 
         this.textBox = new TextBox();
         this.scoreboard = new Scoreboard();
+
+        this.passed = 0;
+        this.numWords = 3;
+
+        this.showAnswer = false;
 
         this.strikeCount = 0;
 
@@ -493,13 +544,22 @@ class CardSwapper extends GameObject
         let res = this.box.value;
         if(res.toLowerCase() === this.card.english.toLowerCase())
         {
-            if(this.cards.length == 0)
+            if(this.cards.length == 0 || this.passed == this.numWords - 1)
             {
-                console.log("Woo!");
+                this.scoreboard.resetScore();
+                this.box.value = "";
+                this.strikeCount = 0;
+                this.score = 0;
+                this.passed = 0;
+                this.cards = getCards();
+                this.card = this.nextCard();
+                switchScene(winScene);
             }
             else
             {
+                this.passed++;
                 this.card = this.nextCard();
+                this.scoreboard.addScore();
                 this.box.value = "";
             }
         }
@@ -509,9 +569,19 @@ class CardSwapper extends GameObject
             this.scoreboard.strike();
             this.strikeCount++;
 
+            if(!this.card.isShowing())
+                this.card.showAnswer();
+
             if(this.strikeCount == 3)
             {
-                switchScene(failedScene);
+                this.scoreboard.resetScore();
+                this.box.value = "";
+                this.strikeCount = 0;
+                this.score = 0;
+                this.passed = 0;
+                this.cards = getCards();
+                this.card = this.nextCard();
+                switchScene(failScene);
             }
         }
     }
@@ -547,7 +617,7 @@ class CardSwapper extends GameObject
        }
        else
        {
-            this.box.style.color = "black";
+            this.box.style.color = "#4c4506";
        }
     }
 
@@ -601,7 +671,6 @@ function getCards()
 {
     let cards = new Array();
 
-    cards.push(new Card("あの", "um"));
     cards.push(new Card("いま", "now"));
     cards.push(new Card("えいご", "english"));
     cards.push(new Card("がくせい", "student"));
@@ -613,25 +682,47 @@ function getCards()
     cards.push(new Card("せんせい", "teacher"));
     cards.push(new Card("そうです", "correct"));
     cards.push(new Card("だいがく", "college"));
-    cards.push(new Card("でんわ", "friend"));
+    cards.push(new Card("でんわ", "phone"));
+    cards.push(new Card("ともだち", "friend"));
+    cards.push(new Card("なまえ", "name"));
+    cards.push(new Card("なん／なに", "what"));
+    cards.push(new Card("にほん", "japan"));
+    cards.push(new Card("はい", "yes"));
+    cards.push(new Card("はん", "half"));
+    cards.push(new Card("ばんごう", "number"));
+    cards.push(new Card("わたし", "I"));
+    cards.push(new Card("かがく", "science"));
+    cards.push(new Card("コンピューター", "computer"));
+    cards.push(new Card("しごと", "job"));
+    cards.push(new Card("いしゃ", "doctor"));
+    cards.push(new Card("おかあさん", "mother"));
+    cards.push(new Card("おとうさん", "father"));
 
     return cards;
 }
 
 // Setup scenes
-let cardsSceen = new Scene(img_cards_bg);
+cardsSceen = new Scene(img_cards_bg);
 cardsSceen.add(new CardSwapper(getCards()));
 
-let cardsSceen_pre = new Scene(img_cards_bg);
-cardsSceen_pre.add(new Logo(img_cards_logo, 0, 75, 100, 640, 400));
-cardsSceen_pre.add(new Button("プレー", img_button, "bold 34px Arial", "bold 36px Arial", "#4c4506", 275, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
+cardsSceen_pre = new Scene(img_cards_bg);
+cardsSceen_pre.add(new Logo(img_cards_logo, 0, 100, 175, 600, 280));
+cardsSceen_pre.add(new Button("プレー", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 275, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
 
-failScene = new Scene();
+failScene = new Scene(img_cards_bg);
+failScene.add(new Logo(img_lose, 6, 100, 175, 600, 280))
+failScene.add(new Button("メニュー", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 125, 550, 250, 100, 15, function(){ switchScene(menuScene); }))
+failScene.add(new Button("またする", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 425, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
 
-let menuScene = new Scene(img_menu_bg);
+winScene = new Scene(img_cards_bg);
+winScene.add(new Logo(img_win, 4, 100, 175, 600, 280))
+winScene.add(new Button("メニュー", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 125, 550, 250, 100, 15, function(){ switchScene(menuScene); }))
+winScene.add(new Button("またする", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 425, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
+
+menuScene = new Scene(img_menu_bg);
 menuScene.add(new Logo(img_logo, 4, 75, 100, 640, 400));
-menuScene.add(new Button("カードズ", img_button, "bold 34px Arial", "bold 36px Arial", "#4c4506", 275, 500, 250, 100, 15, function(){ switchScene(cardsSceen_pre); }));
-menuScene.add(new Button("フォーリング", img_button, "bold 30px Arial","bold 32px Arial", "#4c4506", 275, 650, 250, 100, 15, function(){ switchScene(cardsSceen_pre); }));
+menuScene.add(new Button("カードズ", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 275, 500, 250, 100, 15, function(){ switchScene(cardsSceen_pre); }));
+menuScene.add(new Button("フォーリング", img_button, "bold 30px kosugimaru","bold 32px kosugimaru", "#4c4506", 275, 650, 250, 100, 15, function(){ switchScene(cardsSceen_pre); }));
 
 // Set starting scene to menu
 activeScene = menuScene;

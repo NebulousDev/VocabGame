@@ -16,6 +16,7 @@ canvas
 {
     position: absolute;
     background-color:rgba(0, 0, 0, 0);
+    color: #4c4506;
     border: none;
     outline: none;
     top: 0px;
@@ -23,5 +24,16 @@ canvas
     text-align: center;
     width: 500px;
     height: 100px;
+    font-family: 'otsutome';
     font-size: 48px;
+}
+
+@font-face {
+    font-family: 'otsutome';
+    src: url('otsutome.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'kosugimaru';
+    src: url('kosugimaru.ttf') format('truetype');
 }
