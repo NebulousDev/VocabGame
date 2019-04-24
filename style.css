@@ -11,3 +11,17 @@ canvas
     display: block;
     width: 800px;
 }
+
+.textBox
+{
+    position: absolute;
+    background-color:rgba(0, 0, 0, 0);
+    border: none;
+    outline: none;
+    top: 0px;
+    left: 0px;
+    text-align: center;
+    width: 500px;
+    height: 100px;
+    font-size: 48px;
+}
