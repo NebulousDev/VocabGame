@@ -45,31 +45,31 @@ let menuScene = undefined;
 
 // Images
 var img_menu_bg = new Image;
-img_menu_bg.src = "menu_bg.png";
+img_menu_bg.src = "images/menu_bg.png";
 
 var img_logo = new Image;
-img_logo.src = "logo2.png";
+img_logo.src = "images/logo2.png";
 
 var img_button = new Image;
-img_button.src = "button.png";
+img_button.src = "images/button.png";
 
 var img_cards_bg = new Image;
-img_cards_bg.src = "cards_bg.png";
+img_cards_bg.src = "images/cards_bg.png";
 
 var img_cards_logo = new Image;
-img_cards_logo.src = "card_logo.png";
+img_cards_logo.src = "images/card_logo.png";
 
 var img_card = new Image;
-img_card.src = "card.png";
+img_card.src = "images/card.png";
 
 var img_textArea = new Image;
-img_textArea.src = "text_area.png";
+img_textArea.src = "images/text_area.png";
 
 var img_win = new Image;
-img_win.src = "win.png";
+img_win.src = "images/win.png";
 
 var img_lose = new Image;
-img_lose.src = "lose.png";
+img_lose.src = "images/lose.png";
 
 function fix_dpi() {
     //create a style object that returns width and height

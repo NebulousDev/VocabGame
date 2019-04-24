@@ -30,10 +30,10 @@ canvas
 
 @font-face {
     font-family: 'otsutome';
-    src: url('otsutome.ttf') format('truetype');
+    src: url('fonts/otsutome.ttf') format('truetype');
 }
 
 @font-face {
     font-family: 'kosugimaru';
-    src: url('kosugimaru.ttf') format('truetype');
+    src: url('fonts/kosugimaru.ttf') format('truetype');
 }
