@@ -30,7 +30,7 @@ let leftClick = false;
 let rightClick = false;
 
 // DPI
-dpi = window.devicePixelRatio;
+let dpi = window.devicePixelRatio;
 
 // Random Settings:
 let buttonGrowMargin = 5;
@@ -46,6 +46,9 @@ let menuScene = undefined;
 // Images
 var img_menu_bg = new Image;
 img_menu_bg.src = "images/menu_bg.png";
+
+var img_menu_bg2 = new Image;
+img_menu_bg2.src = "images/menu_bg2.png";
 
 var img_logo = new Image;
 img_logo.src = "images/logo2.png";
@@ -72,7 +75,6 @@ var img_lose = new Image;
 img_lose.src = "images/lose.png";
 
 function fix_dpi() {
-    //create a style object that returns width and height
       let style = {
         height() {
           return +getComputedStyle(canvas).getPropertyValue('height').slice(0,-2);
@@ -81,7 +83,6 @@ function fix_dpi() {
           return +getComputedStyle(canvas).getPropertyValue('width').slice(0,-2);
         }
       }
-    //set the correct attributes for a crystal clear image!
       canvas.setAttribute('width', style.width() * dpi);
       canvas.setAttribute('height', style.height() * dpi);
     }
@@ -89,8 +90,8 @@ function fix_dpi() {
 function forceKeyPressUppercase(e)
 {
     var charInput = e.keyCode;
-    if((charInput >= 97) && (charInput <= 122)) { // lowercase
-    if(!e.ctrlKey && !e.metaKey && !e.altKey) { // no modifier key
+    if((charInput >= 97) && (charInput <= 122)) {
+    if(!e.ctrlKey && !e.metaKey && !e.altKey) {
         var newChar = charInput - 32;
         var start = e.target.selectionStart;
         var end = e.target.selectionEnd;
@@ -375,7 +376,7 @@ class TextBox extends GameObject
     {
         let rect = canvas.getBoundingClientRect();
         let sx = rect.x + 150;
-        let sy = rect.y + 670;
+        let sy = getComputedStyle(canvas).getPropertyValue('height').slice(0,-2) - 220;
         this.box = document.getElementsByName("text")[0];
         this.box.disabled = false;
         this.box.style.top = sy + "px";
@@ -412,6 +413,26 @@ class Card extends GameObject
         this.width = 600;
         this.height = 375;
 
+        // NOTE: This is dumb. Should just be it's own
+        // Object or moved into GameObject
+
+        this.setWidth = function(width)
+        {
+            this.width = width;
+        };
+
+        this.setHeight = function(height)
+        {
+            this.height = height;
+        };
+
+        this.moveDown = function(dist)
+        {
+            this.y += dist;
+        }
+
+        //////////////////////////////
+
         this.showAnswer = function()
         {
             this.show = true;
@@ -421,6 +442,11 @@ class Card extends GameObject
         {
             return this.show;
         };
+
+        this.clone = function()
+        {
+            return new Card(this.japanese, this.english);
+        }
     }
     
     render()
@@ -441,6 +467,7 @@ class Card extends GameObject
     }
 }
 
+// Scoreboard game object
 class Scoreboard extends GameObject
 {
     constructor()
@@ -470,6 +497,7 @@ class Scoreboard extends GameObject
 
         this.resetScore = function()
         {
+            this.score = 0;
             this.strikes = ""
         }
     }
@@ -624,10 +652,63 @@ class CardSwapper extends GameObject
     }
 }
 
+// Card dropper for Falling game
+// NOTE: incomplete
+class CardDropper extends GameObject
+{
+    constructor()
+    {
+        super();
+        this.cards = getCards();
+        this.activeCards = new Array();
+        this.time = new Date().getTime();
+        this.nextTime = this.time;
+    }
+
+    nextCard()
+    {
+        let num = Math.floor(Math.random() * this.cards.length);
+        let card = this.cards[num].clone();
+        card.setWidth(100);
+        card.setHeight(60);
+        card.setPos(Math.floor(Math.random() * canvas_width - 100), 0);
+        return card;
+    }
+
+    update()
+    {
+        this.time = new Date().getTime();
+
+        if(this.time >= this.nextTime)
+        {
+            this.activeCards[this.activeCards.length] = this.nextCard();
+            this.nextTime = this.time + 1000;
+        }
+
+        for(let i = 0; i < this.activeCards.length; i++)
+        {
+            this.activeCards[i].moveDown(0.5);
+            if(this.activeCards[i].getY() > canvas_height)
+            {
+                this.activeCards.filter(function(value, index, array) {
+                    if(value == this.activeCards[i]) return false;
+                    return true;
+                });
+            }
+        }
+    }
+
+    render()
+    {
+        for(let i = 0; i < this.activeCards.length; i++)
+            this.activeCards[i].render();
+    }
+}
+
 // Draw the frame
 function renderGame()
 {
-    fix_dpi();
+    //fix_dpi();
     gfx.fillStyle = "white";
     gfx.fillRect(0, 0, canvas_width, canvas_height);
     activeScene.renderAll();
@@ -652,6 +733,7 @@ function updateAndRender()
 // Start the game
 function start()
 {
+    fix_dpi();
     updateAndRender();
 }
 
@@ -669,11 +751,7 @@ function getCards()
     cards.push(new Card("いま", "now"));
     cards.push(new Card("えいご", "english"));
     cards.push(new Card("がくせい", "student"));
-    cards.push(new Card("〜ご", "language"));
     cards.push(new Card("こうこう", "high school"));
-    cards.push(new Card("ごご", "PM"));
-    cards.push(new Card("ごぜん", "AM"));
-    cards.push(new Card("〜さい", "years old"));
     cards.push(new Card("せんせい", "teacher"));
     cards.push(new Card("そうです", "correct"));
     cards.push(new Card("だいがく", "college"));
@@ -698,26 +776,29 @@ function getCards()
 
 // Setup scenes
 cardsSceen = new Scene(img_cards_bg);
-cardsSceen.add(new CardSwapper(getCards()));
+cardsSceen.add(new CardSwapper());
 
 cardsSceen_pre = new Scene(img_cards_bg);
 cardsSceen_pre.add(new Logo(img_cards_logo, 0, 100, 175, 600, 280));
-cardsSceen_pre.add(new Button("プレー", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 275, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
+cardsSceen_pre.add(new Button("プレイ", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 275, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
 
-failScene = new Scene(img_cards_bg);
+fallingScene = new Scene(img_menu_bg2);
+fallingScene.add(new CardDropper());
+
+failScene = new Scene(img_menu_bg2);
 failScene.add(new Logo(img_lose, 6, 100, 175, 600, 280))
 failScene.add(new Button("メニュー", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 125, 550, 250, 100, 15, function(){ switchScene(menuScene); }))
 failScene.add(new Button("またする", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 425, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
 
-winScene = new Scene(img_cards_bg);
+winScene = new Scene(img_menu_bg2);
 winScene.add(new Logo(img_win, 4, 100, 175, 600, 280))
 winScene.add(new Button("メニュー", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 125, 550, 250, 100, 15, function(){ switchScene(menuScene); }))
 winScene.add(new Button("またする", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 425, 550, 250, 100, 15, function(){ switchScene(cardsSceen); }))
 
 menuScene = new Scene(img_menu_bg);
 menuScene.add(new Logo(img_logo, 4, 75, 100, 640, 400));
-menuScene.add(new Button("カードズ", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 275, 500, 250, 100, 15, function(){ switchScene(cardsSceen_pre); }));
-menuScene.add(new Button("フォーリング", img_button, "bold 30px kosugimaru","bold 32px kosugimaru", "#4c4506", 275, 650, 250, 100, 15, function(){ switchScene(cardsSceen_pre); }));
+menuScene.add(new Button("カード", img_button, "bold 34px kosugimaru", "bold 36px kosugimaru", "#4c4506", 275, 500, 250, 100, 15, function(){ switchScene(cardsSceen_pre); }));
+menuScene.add(new Button("フォーリング", img_button, "bold 30px kosugimaru","bold 32px kosugimaru", "#4c4506", 275, 650, 250, 100, 15, function(){ switchScene(fallingScene); }));
 
 // Set starting scene to menu
 activeScene = menuScene;
